@@ -41,7 +41,7 @@ The Product Search and Availability System is a web application that allows user
 - Password: admin
 
 ## Prerequisites
-- MySQL (with root, root in our case)
+- MySQL (with root, root in our case; 3306 the port)
 - Maven
 
 ## In-a-go Command
