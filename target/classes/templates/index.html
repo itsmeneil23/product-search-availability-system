@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Product Search and Availability System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .bounce {
+            display: inline-block;
+            animation: bounce 1s infinite;
+            color: #28a745;
+            font-weight: bold;
+        }
+        .spinner-border {
+            display: none;
+            width: 1rem;
+            height: 1rem;
+            margin-right: 0.5rem;
+        }
+        .btn-loading .spinner-border {
+            display: inline-block;
+        }
+        .btn-loading .btn-text {
+            display: none;
+        }
+        .card {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .table th {
+            background-color: #f8f9fa;
+        }
+        @keyframes confetti {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100px) rotate(360deg); opacity: 0; }
+        }
+        .confetti {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            background-color: #ffd700;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: confetti 1s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-store me-2"></i>Product Search and Availability System
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a href="/login" class="btn btn-outline-light me-2">
+                    <i class="fas fa-user-shield me-1"></i>Admin Login
+                </a>
+                <a href="/market-login" class="btn btn-outline-light">
+                    <i class="fas fa-store me-1"></i>Market Login
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <!-- Search Form -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-search me-2"></i>Search Products
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/search}" method="post" id="searchForm">
+                            <div class="mb-3">
+                                <label for="productId" class="form-label">Product</label>
+                                <select class="form-select" id="productId" name="productId" required>
+                                    <option value="">Select a product</option>
+                                    <option th:each="product : ${products}"
+                                            th:value="${product.id}"
+                                            th:text="${product.name}">
+                                    </option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Minimum Quantity</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" 
+                                       min="0" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                <span class="btn-text">Search</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Search Results -->
+                <div th:if="${searchResults != null}" class="card">
+                    <div class="card-header bg-success text-white">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-list me-2"></i>Search Results
+                        </h3>
+                        <p class="mb-0 mt-2" th:if="${selectedProduct != null}">
+                            Showing markets with <span th:text="${selectedProduct.name}" class="fw-bold"></span> 
+                            (minimum quantity: <span th:text="${param.quantity}" class="fw-bold"></span>)
+                        </p>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${#lists.isEmpty(searchResults)}" class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>No markets found with the requested quantity.
+                        </div>
+                        <div th:unless="${#lists.isEmpty(searchResults)}" class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Market Name</th>
+                                        <th>Available Quantity</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="result : ${searchResults}">
+                                        <td th:text="${result.marketName}" 
+                                            th:style="${result.quantity >= 100} ? 'color: green; font-weight: bold;' : 
+                                                   (${result.quantity >= 50} ? 'color: blue;' : 
+                                                   (${result.quantity >= 10} ? 'color: orange;' : 'color: red;'))">
+                                        </td>
+                                        <td>
+                                            <span th:if="${result.quantity > 50}" 
+                                                  th:text="${result.quantity}" 
+                                                  class="bounce"></span>
+                                            <span th:unless="${result.quantity > 50}" 
+                                                  th:text="${result.quantity}"></span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            const button = this.querySelector('button[type="submit"]');
+            button.classList.add('btn-loading');
+        });
+
+        // Add confetti effect when results are found
+        document.addEventListener('DOMContentLoaded', function() {
+            const resultsTable = document.querySelector('.table-responsive');
+            if (resultsTable) {
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        const confetti = document.createElement('div');
+                        confetti.className = 'confetti';
+                        confetti.style.left = Math.random() * window.innerWidth + 'px';
+                        confetti.style.top = '-10px';
+                        confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                        document.body.appendChild(confetti);
+                        
+                        // Remove confetti element after animation
+                        setTimeout(() => confetti.remove(), 1000);
+                    }, i * 50);
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
